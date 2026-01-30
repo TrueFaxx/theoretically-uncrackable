@@ -2,4 +2,5 @@
   <Project Path="1mageWare.Client/1mageWare.Client.csproj" />
   <Project Path="1mageWare.LicenseGen/1mageWare.LicenseGen.csproj" />
   <Project Path="1mageWare.Shared/1mageWare.Shared.csproj" />
+  <Project Path="1mageWare.Enhanced/1mageWare.Enhanced.csproj" />
 </Solution>
