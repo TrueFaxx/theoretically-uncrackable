@@ -16,22 +16,27 @@ public static class LicenseSigner
         WriteIndented = true
     };
 
-    // DEV SIDE: create a signed license.json
+    // DEV SIDE: create a signed license.json with enhanced security
     public static string CreateSignedLicenseJson(
         string privateKeyPkcs8B64,
-        string hardwareCode24,
+        string hardwareCode32,
         DateTime expiresUtc,
         string[] features,
-        Dictionary<string, string>? fileHashes = null)
+        Dictionary<string, string>? fileHashes = null,
+        bool enableIntegrity = true,
+        int maxRunCount = -1) // -1 means unlimited
     {
-        var payloadObj = new LicensePayload
+        var payloadObj = new EnhancedLicensePayload
         {
             LicenseId = Guid.NewGuid().ToString("N"),
             IssuedUtc = DateTime.UtcNow,
             ExpiresUtc = expiresUtc.ToUniversalTime(),
-            HwidHash = CryptoUtil.Sha256Hex(hardwareCode24),
+            HwidHash = CryptoUtil.Sha256Hex(hardwareCode32),
             Features = features ?? Array.Empty<string>(),
-            FileHashes = fileHashes
+            FileHashes = fileHashes,
+            EnableIntegrity = enableIntegrity,
+            MaxRunCount = maxRunCount,
+            CurrentRunCount = 0
         };
 
         var payloadJson = JsonSerializer.Serialize(payloadObj, JsonWrite);
@@ -42,18 +47,19 @@ public static class LicenseSigner
         var lic = new LicenseFile
         {
             Payload = CryptoUtil.Base64UrlEncode(payloadBytes),
-            Sig = CryptoUtil.Base64UrlEncode(sigBytes)
+            Sig = CryptoUtil.Base64UrlEncode(sigBytes),
+            FormatVersion = 2 // Enhanced format
         };
 
         return JsonSerializer.Serialize(lic, JsonWrite);
     }
 
-    // CLIENT SIDE: validate license.json
+    // CLIENT SIDE: validate license.json with enhanced checks
     public static bool TryValidateLicense(
         string publicKeySpkiB64,
         string licenseJson,
-        string localHardwareCode24,
-        out LicensePayload? payload,
+        string localHardwareCode32,
+        out EnhancedLicensePayload? payload,
         out string error)
     {
         payload = null;
@@ -87,7 +93,7 @@ public static class LicenseSigner
             return false;
         }
 
-        // 1) signature
+        // 1) signature verification
         if (!Verify(publicKeySpkiB64, payloadBytes, sigBytes))
         {
             error = "Invalid signature (license edited or not issued by you).";
@@ -98,7 +104,7 @@ public static class LicenseSigner
         try
         {
             var payloadJson = Encoding.UTF8.GetString(payloadBytes);
-            payload = JsonSerializer.Deserialize<LicensePayload>(payloadJson, JsonRead);
+            payload = JsonSerializer.Deserialize<EnhancedLicensePayload>(payloadJson, JsonRead);
             if (payload is null)
             {
                 error = "License payload is invalid.";
@@ -111,19 +117,44 @@ public static class LicenseSigner
             return false;
         }
 
-        // 3) expiry
+        // 3) expiry check
         if (DateTime.UtcNow > payload.ExpiresUtc.ToUniversalTime())
         {
             error = "License expired.";
             return false;
         }
 
-        // 4) hwid bind
-        var localHash = CryptoUtil.Sha256Hex(localHardwareCode24);
+        // 4) hwid binding check
+        var localHash = CryptoUtil.Sha256Hex(localHardwareCode32);
         if (!CryptoUtil.FixedTimeEqualsAscii(localHash, payload.HwidHash.Trim().ToLowerInvariant()))
         {
             error = "HWID mismatch (license not for this PC).";
             return false;
+        }
+
+        // 5) Virtual environment check
+        if (HardwareCode.IsVirtualEnvironment())
+        {
+            error = "Running in virtual environment (license violation).";
+            return false;
+        }
+
+        // 6) Debugger check
+        if (HardwareCode.IsDebugged())
+        {
+            error = "Debugger detected (license violation).";
+            return false;
+        }
+
+        // 7) Run count check (if limited)
+        if (payload.MaxRunCount >= 0)
+        {
+            var runCount = LicenseStorage.IncrementRunCount(payload.LicenseId);
+            if (runCount > payload.MaxRunCount)
+            {
+                error = "Maximum run count exceeded.";
+                return false;
+            }
         }
 
         return true;
@@ -144,4 +175,48 @@ public static class LicenseSigner
         ecdsa.ImportSubjectPublicKeyInfo(pub, out _);
         return ecdsa.VerifyData(payloadBytes, sigBytes, HashAlgorithmName.SHA256);
     }
+}
+
+public sealed class LicenseFile
+{
+    [JsonPropertyName("payload")]
+    public string Payload { get; set; } = "";
+
+    [JsonPropertyName("sig")]
+    public string Sig { get; set; } = "";
+
+    [JsonPropertyName("formatVersion")]
+    public int FormatVersion { get; set; } = 1;
+}
+
+public sealed class EnhancedLicensePayload
+{
+    [JsonPropertyName("licenseId")]
+    public string LicenseId { get; set; } = "";
+
+    [JsonPropertyName("issuedUtc")]
+    public DateTime IssuedUtc { get; set; }
+
+    [JsonPropertyName("expiresUtc")]
+    public DateTime ExpiresUtc { get; set; }
+
+    // sha256 hex of HardwareCode.Get(32)
+    [JsonPropertyName("hwidHash")]
+    public string HwidHash { get; set; } = "";
+
+    [JsonPropertyName("features")]
+    public string[] Features { get; set; } = Array.Empty<string>();
+
+    // OPTIONAL: integrity list (filename -> sha256 hex)
+    [JsonPropertyName("fileHashes")]
+    public Dictionary<string, string>? FileHashes { get; set; }
+    
+    [JsonPropertyName("enableIntegrity")]
+    public bool EnableIntegrity { get; set; } = true;
+    
+    [JsonPropertyName("maxRunCount")]
+    public int MaxRunCount { get; set; } = -1; // -1 = unlimited
+    
+    [JsonPropertyName("currentRunCount")]
+    public int CurrentRunCount { get; set; } = 0;
 }

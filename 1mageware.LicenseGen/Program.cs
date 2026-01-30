@@ -1,28 +1,28 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using ImageWare.Shared;
 
-Console.WriteLine("=== 1mageWare LicenseGen ===");
+Console.WriteLine("=== 1mageWare Enhanced LicenseGen ===");
 
 // Press Enter to auto-generate/load keys from AppData
-Console.Write("PrivateKey (PKCS#8 Base64) [press Enter to auto-generate/load]: ");
+Console.Write("PrivateKey (PKCS#8 Base64) [press Enter to auto-auto-generate/load]: ");
 var privInput = (Console.ReadLine() ?? "").Trim();
 
 var (privB64, pubB64) = EnsureKeys(privInput);
 
 // Tell you exactly what to paste into the client
 Console.WriteLine();
-Console.WriteLine("PUBLIC KEY (SPKI Base64) - paste into 1mageWare.Client Program.cs:");
+Console.WriteLine("PUBLIC KEY (SPKI Base64) - paste into Client Program.cs:");
 Console.WriteLine(pubB64);
 Console.WriteLine();
 
-Console.Write("User Hardware Code (24 chars): ");
+Console.Write("User Hardware Code (32 chars): ");
 var hw = (Console.ReadLine() ?? "").Trim();
-if (hw.Length != 24)
+if (hw.Length != 32)
 {
-    Console.WriteLine("HW code must be exactly 24 chars.");
+    Console.WriteLine("HW code must be exactly 32 chars (use enhanced hardware code generator).");
     return;
 }
 
@@ -44,9 +44,18 @@ var features = string.IsNullOrWhiteSpace(featsStr)
         .Where(x => x.Length > 0)
         .ToArray();
 
-// OPTIONAL integrity hashes (simple mode): hash all exe/dlls in a folder
+// OPTIONAL integrity hashes (enhanced mode): hash all exe/dlls in a folder
 Console.Write("Add file integrity hashes? (y/n): ");
 var doIntegrity = (Console.ReadLine() ?? "").Trim().Equals("y", StringComparison.OrdinalIgnoreCase);
+
+// OPTION for run count limits
+Console.Write("Max run count (-1 for unlimited): ");
+var runCountStr = (Console.ReadLine() ?? "").Trim();
+int maxRunCount = -1;
+if (int.TryParse(runCountStr, out var parsedRunCount))
+{
+    maxRunCount = parsedRunCount;
+}
 
 Dictionary<string, string>? fileHashes = null;
 if (doIntegrity)
@@ -62,16 +71,18 @@ if (doIntegrity)
 
     fileHashes = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
-    foreach (var file in Directory.GetFiles(folder, "*.*", SearchOption.TopDirectoryOnly))
+    foreach (var file in Directory.GetFiles(folder, "*.*", SearchOption.AllDirectories))
     {
         var name = Path.GetFileName(file);
 
-        // Keep it tight: only exe + dll
-        if (!name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) &&
-            !name.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
-            continue;
-
-        fileHashes[name] = Integrity.Sha256FileHex(file);
+        // Include more file types for enhanced integrity checking
+        if (name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) ||
+            name.EndsWith(".dll", StringComparison.OrdinalIgnoreCase) ||
+            name.EndsWith(".so", StringComparison.OrdinalIgnoreCase) ||
+            name.EndsWith(".dylib", StringComparison.OrdinalIgnoreCase))
+        {
+            fileHashes[GetRelativePath(file, folder)] = Integrity.Sha256FileHex(file);
+        }
     }
 
     Console.WriteLine($"Hashed {fileHashes.Count} file(s).");
@@ -79,17 +90,19 @@ if (doIntegrity)
 
 var licenseJson = LicenseSigner.CreateSignedLicenseJson(
     privateKeyPkcs8B64: privB64,
-    hardwareCode24: hw,
+    hardwareCode32: hw,
     expiresUtc: expiresUtc,
     features: features,
-    fileHashes: fileHashes
+    fileHashes: fileHashes,
+    enableIntegrity: doIntegrity,
+    maxRunCount: maxRunCount
 );
 
 Console.WriteLine();
-Console.WriteLine("=== LICENSE.JSON ===");
+Console.WriteLine("=== ENHANCED LICENSE.JSON ===");
 Console.WriteLine(licenseJson);
 Console.WriteLine();
-Console.WriteLine(@"Save it as: %LOCALAPPDATA%\1mageWare\license.json");
+Console.WriteLine(@"Save it as: %LOCALAPPDATA%\1mageWare\secure_data\license.dat");
 
 // ---------------- helpers ----------------
 
@@ -98,7 +111,7 @@ static (string privB64, string pubB64) EnsureKeys(string userProvidedPrivB64)
     var keysDir = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "1mageWare",
-        "keys"
+        "secure_keys"
     );
     Directory.CreateDirectory(keysDir);
 
@@ -135,7 +148,7 @@ static (string privB64, string pubB64) EnsureKeys(string userProvidedPrivB64)
         return (priv, pub);
     }
 
-    // Generate new keys
+    // Generate new keys with stronger curve
     using var ecdsa = ECDsa.Create(ECCurve.NamedCurves.nistP256);
     var newPrivB64 = Convert.ToBase64String(ecdsa.ExportPkcs8PrivateKey());
     var newPubB64  = Convert.ToBase64String(ecdsa.ExportSubjectPublicKeyInfo());
@@ -157,4 +170,15 @@ static string DerivePublicFromPrivate(string privateKeyPkcs8B64)
     using var ecdsa = ECDsa.Create();
     ecdsa.ImportPkcs8PrivateKey(Convert.FromBase64String(privateKeyPkcs8B64), out _);
     return Convert.ToBase64String(ecdsa.ExportSubjectPublicKeyInfo());
+}
+
+static string GetRelativePath(string filePath, string basePath)
+{
+    var fileUri = new Uri(filePath);
+    var baseUri = new Uri(basePath.EndsWith(Path.DirectorySeparatorChar.ToString()) 
+        ? basePath 
+        : basePath + Path.DirectorySeparatorChar);
+    
+    var relativeUri = baseUri.MakeRelativeUri(fileUri);
+    return Uri.UnescapeDataString(relativeUri.ToString()).Replace('/', Path.DirectorySeparatorChar);
 }
