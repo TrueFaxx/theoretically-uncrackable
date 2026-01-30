@@ -1,0 +1,11 @@
+D:\1mageware.LicenseGen\bin\Release\net8.0-windows\publish\1mageware.LicenseGen.exe
+D:\1mageware.LicenseGen\bin\Release\net8.0-windows\publish\1mageware.LicenseGen.dll
+D:\1mageware.LicenseGen\bin\Release\net8.0-windows\publish\1mageware.LicenseGen.deps.json
+D:\1mageware.LicenseGen\bin\Release\net8.0-windows\publish\1mageware.LicenseGen.runtimeconfig.json
+D:\1mageware.LicenseGen\bin\Release\net8.0-windows\publish\1mageware.LicenseGen.pdb
+D:\1mageware.LicenseGen\bin\Release\net8.0-windows\publish\System.CodeDom.dll
+D:\1mageware.LicenseGen\bin\Release\net8.0-windows\publish\System.Management.dll
+D:\1mageware.LicenseGen\bin\Release\net8.0-windows\publish\System.Security.Cryptography.ProtectedData.dll
+D:\1mageware.LicenseGen\bin\Release\net8.0-windows\publish\runtimes\win\lib\net8.0\System.Management.dll
+D:\1mageware.LicenseGen\bin\Release\net8.0-windows\publish\1mageWare.Shared.dll
+D:\1mageware.LicenseGen\bin\Release\net8.0-windows\publish\1mageWare.Shared.pdb

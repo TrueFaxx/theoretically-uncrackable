@@ -1,0 +1,12 @@
+D:\1mageWare.Shared\bin\Release\net8.0-windows\1mageWare.Shared.deps.json
+D:\1mageWare.Shared\bin\Release\net8.0-windows\1mageWare.Shared.dll
+D:\1mageWare.Shared\bin\Release\net8.0-windows\1mageWare.Shared.pdb
+D:\1mageWare.Shared\obj\Release\net8.0-windows\1mageWare.Shared.csproj.AssemblyReference.cache
+D:\1mageWare.Shared\obj\Release\net8.0-windows\1mageWare.Shared.GeneratedMSBuildEditorConfig.editorconfig
+D:\1mageWare.Shared\obj\Release\net8.0-windows\1mageWare.Shared.AssemblyInfoInputs.cache
+D:\1mageWare.Shared\obj\Release\net8.0-windows\1mageWare.Shared.AssemblyInfo.cs
+D:\1mageWare.Shared\obj\Release\net8.0-windows\1mageWare.Shared.csproj.CoreCompileInputs.cache
+D:\1mageWare.Shared\obj\Release\net8.0-windows\1mageWare.Shared.dll
+D:\1mageWare.Shared\obj\Release\net8.0-windows\refint\1mageWare.Shared.dll
+D:\1mageWare.Shared\obj\Release\net8.0-windows\1mageWare.Shared.pdb
+D:\1mageWare.Shared\obj\Release\net8.0-windows\ref\1mageWare.Shared.dll

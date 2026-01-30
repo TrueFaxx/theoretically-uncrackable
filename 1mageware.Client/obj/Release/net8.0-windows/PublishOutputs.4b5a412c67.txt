@@ -1,0 +1,11 @@
+D:\1mageware.Client\bin\Release\net8.0-windows\publish\1mageware.Client.exe
+D:\1mageware.Client\bin\Release\net8.0-windows\publish\1mageware.Client.dll
+D:\1mageware.Client\bin\Release\net8.0-windows\publish\1mageware.Client.deps.json
+D:\1mageware.Client\bin\Release\net8.0-windows\publish\1mageware.Client.runtimeconfig.json
+D:\1mageware.Client\bin\Release\net8.0-windows\publish\1mageware.Client.pdb
+D:\1mageware.Client\bin\Release\net8.0-windows\publish\System.CodeDom.dll
+D:\1mageware.Client\bin\Release\net8.0-windows\publish\System.Management.dll
+D:\1mageware.Client\bin\Release\net8.0-windows\publish\System.Security.Cryptography.ProtectedData.dll
+D:\1mageware.Client\bin\Release\net8.0-windows\publish\runtimes\win\lib\net8.0\System.Management.dll
+D:\1mageware.Client\bin\Release\net8.0-windows\publish\1mageWare.Shared.dll
+D:\1mageware.Client\bin\Release\net8.0-windows\publish\1mageWare.Shared.pdb
